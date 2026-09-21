@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { X, Eye } from "lucide-react";
 import { sentencesForCategory } from "@/data/sentences";
 import { LANGUAGES, type LanguageCode } from "@/data/languages";
@@ -123,30 +123,51 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
 
   // Walk the full target sentence, overlaying what's been typed so far (colored)
   // on top of the still-untyped remainder (shown as a muted "answer" to copy).
+  type CharState = "correct" | "wrong" | "ghost" | "optional";
   const typedChars = Array.from(input);
   let typedIndex = 0;
-  const displayChars: { key: number; ch: string; state: "correct" | "wrong" | "ghost" | "optional" }[] = [];
-  Array.from(expectedText).forEach((ch, i) => {
+  const chars: { ch: string; state: CharState }[] = [];
+  Array.from(expectedText).forEach((ch) => {
     if (OPTIONAL_LEADING_PUNCT.has(ch)) {
       const typedIt = typedIndex < typedChars.length && typedChars[typedIndex] === ch;
       if (typedIt) {
-        displayChars.push({ key: i, ch, state: "correct" });
+        chars.push({ ch, state: "correct" });
         typedIndex++;
       } else {
         // Not typed (most keyboards can't produce ¿/¡) — show it dimmed, don't consume input for it.
-        displayChars.push({ key: i, ch, state: "optional" });
+        chars.push({ ch, state: "optional" });
       }
       return;
     }
     if (typedIndex < typedChars.length) {
       const typedCh = typedChars[typedIndex];
       const correct = foldDiacritics(typedCh).toLowerCase() === foldDiacritics(ch).toLowerCase();
-      displayChars.push({ key: i, ch: typedCh, state: correct ? "correct" : "wrong" });
+      chars.push({ ch: typedCh, state: correct ? "correct" : "wrong" });
       typedIndex++;
     } else {
-      displayChars.push({ key: i, ch, state: "ghost" });
+      chars.push({ ch, state: "ghost" });
     }
   });
+
+  // The cursor belongs right where typed input ends and the untyped remainder begins —
+  // never just at the tail end, which would misplace it (badly so for RTL scripts).
+  let cursorAt = chars.findIndex((c) => c.state === "ghost" || c.state === "optional");
+  if (cursorAt === -1) cursorAt = chars.length;
+
+  // Group same-state runs into single spans instead of one span per character: splitting a
+  // word across many sibling elements breaks contextual letter shaping (very visible in Arabic,
+  // where each letter's glyph depends on its neighbors).
+  const runs: { state: CharState; text: string; start: number }[] = [];
+  chars.forEach((c, i) => {
+    const last = runs[runs.length - 1];
+    if (last && last.state === c.state) {
+      last.text += c.ch;
+    } else {
+      runs.push({ state: c.state, text: c.ch, start: i });
+    }
+  });
+
+  const cursor = <span className="inline-block w-0.5 h-6 bg-primary align-middle animate-pulse" />;
 
   return (
     <div className="flex-1 flex flex-col">
@@ -191,20 +212,22 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
 
           {/* Typewriter line: the answer is always visible (copy it), coloring as you type over it. */}
           <div dir={targetMeta.dir} className="text-center font-serif text-2xl min-h-[2.5rem] tracking-wide">
-            {displayChars.map(({ key, ch, state }) => (
-              <span
-                key={key}
-                className={cn(
-                  state === "correct" && "text-success",
-                  state === "wrong" && "text-destructive underline",
-                  state === "ghost" && "text-muted-foreground",
-                  state === "optional" && "text-muted-foreground opacity-50",
-                )}
-              >
-                {ch}
-              </span>
+            {runs.map((run, i) => (
+              <Fragment key={i}>
+                {run.start === cursorAt && cursor}
+                <span
+                  className={cn(
+                    run.state === "correct" && "text-success",
+                    run.state === "wrong" && "text-destructive underline",
+                    run.state === "ghost" && "text-muted-foreground",
+                    run.state === "optional" && "text-muted-foreground opacity-50",
+                  )}
+                >
+                  {run.text}
+                </span>
+              </Fragment>
             ))}
-            <span className="inline-block w-0.5 h-6 bg-primary align-middle animate-pulse ml-0.5" />
+            {cursorAt === chars.length && cursor}
           </div>
 
           <div className="flex flex-col items-center gap-3">
