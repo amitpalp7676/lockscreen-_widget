@@ -1,8 +1,9 @@
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, Volume2, X } from "lucide-react";
 import { BASICS } from "@/data/basics";
 import { LANGUAGES, type LanguageCode } from "@/data/languages";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { isSpeechSupported, speak } from "@/lib/speech";
 
 interface BasicsScreenProps {
   targetLang: LanguageCode;
@@ -13,6 +14,7 @@ interface BasicsScreenProps {
 export function BasicsScreen({ targetLang, onContinue, onExit }: BasicsScreenProps) {
   const meta = LANGUAGES[targetLang];
   const basics = BASICS[targetLang];
+  const canSpeak = isSpeechSupported();
 
   return (
     <div className="flex-1 flex flex-col">
@@ -40,30 +42,47 @@ export function BasicsScreen({ targetLang, onContinue, onExit }: BasicsScreenPro
           </Card>
 
           <section>
-            <h2 className="font-serif text-lg font-semibold mb-3">Numbers 1–5</h2>
+            <h2 className="font-serif text-lg font-semibold mb-3">
+              Numbers 1–5 {canSpeak && <span className="text-xs font-sans text-muted-foreground">(tap to hear)</span>}
+            </h2>
             <div dir={meta.dir} className="flex flex-wrap gap-3">
               {basics.numbers.map((n) => (
-                <div
+                <button
                   key={n.label}
-                  className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-muted border border-border min-w-[4.5rem]"
+                  type="button"
+                  disabled={!canSpeak}
+                  onClick={() => speak(n.word, meta.speechLang)}
+                  className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-muted border border-border min-w-[4.5rem] enabled:hover:border-primary/50 enabled:cursor-pointer transition-colors"
                 >
-                  <span className="text-xs text-muted-foreground font-sans">{n.label}</span>
+                  <span className="text-xs text-muted-foreground font-sans flex items-center gap-1">
+                    {n.label} {canSpeak && <Volume2 className="w-3 h-3" />}
+                  </span>
                   <span className="font-serif text-lg">{n.word}</span>
                   {n.romanization && <span className="text-xs text-muted-foreground font-sans italic">{n.romanization}</span>}
-                </div>
+                </button>
               ))}
             </div>
           </section>
 
           <section>
-            <h2 className="font-serif text-lg font-semibold mb-3">Essential words</h2>
+            <h2 className="font-serif text-lg font-semibold mb-3">
+              Essential words {canSpeak && <span className="text-xs font-sans text-muted-foreground">(tap to hear)</span>}
+            </h2>
             <div dir={meta.dir} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {basics.essentials.map((e) => (
-                <div key={e.label} className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-muted border border-border">
-                  <span className="text-xs text-muted-foreground font-sans">{e.label}</span>
+                <button
+                  key={e.label}
+                  type="button"
+                  disabled={!canSpeak}
+                  onClick={() => speak(e.word, meta.speechLang)}
+                  className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-muted border border-border enabled:hover:border-primary/50 enabled:cursor-pointer transition-colors"
+                >
+                  <span className="text-xs text-muted-foreground font-sans flex items-center gap-1">
+                    {e.label} {canSpeak && <Volume2 className="w-3 h-3" />}
+                  </span>
                   <span className="font-serif text-lg text-center">{e.word}</span>
                   {e.romanization && <span className="text-xs text-muted-foreground font-sans italic">{e.romanization}</span>}
-                </div>
+                </button>
               ))}
             </div>
           </section>

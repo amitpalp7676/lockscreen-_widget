@@ -1,10 +1,11 @@
 import { Fragment, useMemo, useRef, useState } from "react";
-import { X, Eye } from "lucide-react";
+import { X, Eye, Volume2 } from "lucide-react";
 import { sentencesForCategory } from "@/data/sentences";
 import { LANGUAGES, type LanguageCode } from "@/data/languages";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { foldDiacritics, normalizeForMatch, scoreForCombo } from "@/lib/practice";
+import { isSpeechSupported, speak } from "@/lib/speech";
 import { cn } from "@/lib/utils";
 
 export interface LessonResult {
@@ -250,6 +251,16 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
               )}
             />
             <div className="flex items-center gap-3">
+              {isSpeechSupported() && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => speak(expectedText, targetMeta.speechLang)}
+                  className="flex items-center gap-1"
+                >
+                  <Volume2 className="w-4 h-4" /> Listen
+                </Button>
+              )}
               {targetMeta.hasRomanization && targetTranslation.romanization && (
                 <Button
                   size="sm"
