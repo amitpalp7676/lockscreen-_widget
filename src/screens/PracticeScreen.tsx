@@ -47,12 +47,13 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
   const feedbackId = useRef(0);
 
   const sentence = sentences[sentenceIndex];
-  if (!sentence) {
+  const targetTranslation = sentence?.translations[targetLang];
+  const nativeTranslation = sentence?.translations[nativeLang];
+  if (!sentence || !targetTranslation || !nativeTranslation) {
     return null;
   }
 
-  const targetTranslation = sentence.translations[targetLang];
-  const nativePrompt = sentence.translations[nativeLang].tokens.join(nativeMeta.joiner);
+  const nativePrompt = nativeTranslation.tokens.join(nativeMeta.joiner);
   const expectedText = targetTranslation.tokens.join(targetMeta.joiner);
   // Chars the learner actually has to type — accents are folded and leading ¿/¡ are optional,
   // so this stays correct whether or not they typed those (a plain keyboard usually can't).

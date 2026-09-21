@@ -90,6 +90,8 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
           <section>
             <h2 className="font-serif text-lg font-semibold mb-3">Pick a lesson</h2>
             <CategoryGrid
+              nativeLang={nativeLang}
+              targetLang={targetLang ?? nativeLang}
               disabled={!canPick}
               bestRatings={bestRatings}
               onSelect={(categoryId) => canPick && onStart(nativeLang, targetLang, categoryId)}

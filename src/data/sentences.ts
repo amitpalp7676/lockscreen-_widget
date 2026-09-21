@@ -4,6 +4,9 @@ export interface Category {
   id: string;
   name: string;
   icon: string;
+  /** If set, this category only has content for these languages — usable only when both the
+   * native and target language are in this list (e.g. a bilingual-only vocabulary pack). */
+  languages?: LanguageCode[];
 }
 
 export const CATEGORIES: Category[] = [
@@ -12,6 +15,8 @@ export const CATEGORIES: Category[] = [
   { id: "food", name: "Food & Dining", icon: "🍽️" },
   { id: "travel", name: "Travel", icon: "✈️" },
   { id: "numbers", name: "Numbers & Time", icon: "🔢" },
+  { id: "tl-phrases", name: "Quick Tagalog Phrases", icon: "🇵🇭", languages: ["en", "tl"] },
+  { id: "tl-everyday", name: "Everyday Tagalog", icon: "📝", languages: ["en", "tl"] },
 ];
 
 export interface SentenceTranslation {
@@ -24,7 +29,8 @@ export interface SentenceTranslation {
 export interface Sentence {
   id: string;
   categoryId: string;
-  translations: Record<LanguageCode, SentenceTranslation>;
+  /** Most categories cover all 10 languages; language-restricted categories only fill in theirs. */
+  translations: Partial<Record<LanguageCode, SentenceTranslation>>;
 }
 
 export const SENTENCES: Sentence[] = [
@@ -430,6 +436,251 @@ export const SENTENCES: Sentence[] = [
       fr: { tokens: ["Aujourd'hui,", "c'est", "lundi."] },
       pt: { tokens: ["Hoje", "é", "segunda-feira."] },
       ar: { tokens: ["اليوم", "هو", "الاثنين."], romanization: ["Al-yawmu", "huwa", "al-ithnayn."] },
+    },
+  },
+
+  // Quick Tagalog Phrases — English + Tagalog only, curated from the Tatoeba/manythings.org
+  // English-Tagalog sentence corpus (native-speaker sourced, CC-BY 2.0).
+  {
+    id: "tl-phrases-1",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["Go", "home."] },
+      tl: { tokens: ["Umuwi", "ka."] },
+    },
+  },
+  {
+    id: "tl-phrases-2",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["She", "left."] },
+      tl: { tokens: ["Umalis", "siya."] },
+    },
+  },
+  {
+    id: "tl-phrases-3",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["It", "helps."] },
+      tl: { tokens: ["Nakakatulong."] },
+    },
+  },
+  {
+    id: "tl-phrases-4",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["Come", "closer."] },
+      tl: { tokens: ["Lapit."] },
+    },
+  },
+  {
+    id: "tl-phrases-5",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["Have", "fun."] },
+      tl: { tokens: ["Magpakasaya", "kayo."] },
+    },
+  },
+  {
+    id: "tl-phrases-6",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["Stay", "calm."] },
+      tl: { tokens: ["Manatiling", "kalmado."] },
+    },
+  },
+  {
+    id: "tl-phrases-7",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["Do", "you", "agree?"] },
+      tl: { tokens: ["Sang-ayon", "ka", "ba?"] },
+    },
+  },
+  {
+    id: "tl-phrases-8",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["I", "love", "bananas."] },
+      tl: { tokens: ["Mahal", "ko", "ang", "saging."] },
+    },
+  },
+  {
+    id: "tl-phrases-9",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["See", "you", "later."] },
+      tl: { tokens: ["Kita", "tayo", "mamaya."] },
+    },
+  },
+  {
+    id: "tl-phrases-10",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["Who's", "he?"] },
+      tl: { tokens: ["Sino", "siya?"] },
+    },
+  },
+  {
+    id: "tl-phrases-11",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["How", "about", "you?"] },
+      tl: { tokens: ["Eh", "ikaw?"] },
+    },
+  },
+  {
+    id: "tl-phrases-12",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["I", "understand."] },
+      tl: { tokens: ["Naiintindihan", "ko."] },
+    },
+  },
+  {
+    id: "tl-phrases-13",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["What", "for?"] },
+      tl: { tokens: ["Para", "saan?"] },
+    },
+  },
+  {
+    id: "tl-phrases-14",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["Do", "you", "smoke?"] },
+      tl: { tokens: ["Naninigarilyo", "ka", "ba?"] },
+    },
+  },
+  {
+    id: "tl-phrases-15",
+    categoryId: "tl-phrases",
+    translations: {
+      en: { tokens: ["I", "got", "up", "early."] },
+      tl: { tokens: ["Maaga", "akong", "bumangon."] },
+    },
+  },
+
+  // Everyday Tagalog — slightly longer sentences from the same corpus.
+  {
+    id: "tl-everyday-1",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["It", "is", "easier", "than", "I", "thought."] },
+      tl: { tokens: ["Mas", "madali", "iyon", "kaysa", "sa", "aking", "akala."] },
+    },
+  },
+  {
+    id: "tl-everyday-2",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["The", "leaves", "have", "all", "fallen."] },
+      tl: { tokens: ["Lumagpak", "na", "ang", "mga", "dahon."] },
+    },
+  },
+  {
+    id: "tl-everyday-3",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["Would", "you", "like", "to", "go", "shopping", "with", "me?"] },
+      tl: { tokens: ["Gusto", "mong", "mamalengkeng", "kasama", "ako?"] },
+    },
+  },
+  {
+    id: "tl-everyday-4",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["I", "won't", "need", "them."] },
+      tl: { tokens: ["Hindi", "ko", "na", "sila", "kakailanganin."] },
+    },
+  },
+  {
+    id: "tl-everyday-5",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["Everyone", "likes", "big", "pizzas."] },
+      tl: { tokens: ["Gusto", "ng", "lahat", "ang", "malalaking", "pizza."] },
+    },
+  },
+  {
+    id: "tl-everyday-6",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["He", "put", "the", "box", "on", "the", "table."] },
+      tl: { tokens: ["Inilagay", "niya", "ang", "kahon", "sa", "mesa."] },
+    },
+  },
+  {
+    id: "tl-everyday-7",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["I", "don't", "agree", "with", "him."] },
+      tl: { tokens: ["Di", "ako", "sang-ayon", "sa", "kanya."] },
+    },
+  },
+  {
+    id: "tl-everyday-8",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["He", "bought", "a", "hat."] },
+      tl: { tokens: ["Bumili", "siya", "ng", "sumbrero."] },
+    },
+  },
+  {
+    id: "tl-everyday-9",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["I", "fell", "asleep", "in", "class."] },
+      tl: { tokens: ["Napatulog", "ako", "nang", "klase."] },
+    },
+  },
+  {
+    id: "tl-everyday-10",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["I'm", "not", "certain."] },
+      tl: { tokens: ["Hindi", "ako", "sigurado."] },
+    },
+  },
+  {
+    id: "tl-everyday-11",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["This", "box", "is", "full", "of", "books."] },
+      tl: { tokens: ["Puno", "ng", "aklat", "itong", "kahon."] },
+    },
+  },
+  {
+    id: "tl-everyday-12",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["There", "is", "a", "desk", "in", "this", "room."] },
+      tl: { tokens: ["May", "sulatan", "sa", "kuwartong", "ito."] },
+    },
+  },
+  {
+    id: "tl-everyday-13",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["The", "movie", "has", "already", "begun."] },
+      tl: { tokens: ["Nagsimula", "na", "ang", "pelikula."] },
+    },
+  },
+  {
+    id: "tl-everyday-14",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["The", "flower", "is", "not", "black."] },
+      tl: { tokens: ["Hindi", "itim", "ang", "bulaklak."] },
+    },
+  },
+  {
+    id: "tl-everyday-15",
+    categoryId: "tl-everyday",
+    translations: {
+      en: { tokens: ["The", "bookstore", "is", "open."] },
+      tl: { tokens: ["Bukas", "ang", "bukstor."] },
     },
   },
 ];
