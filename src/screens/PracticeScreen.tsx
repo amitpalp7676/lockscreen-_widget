@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { X, Eye } from "lucide-react";
+import { X, Eye, ArrowRight } from "lucide-react";
 import { sentencesForCategory } from "@/data/sentences";
 import { LANGUAGES, type LanguageCode } from "@/data/languages";
 import { Button } from "@/components/ui/Button";
@@ -27,12 +27,14 @@ interface PracticeScreenProps {
 }
 
 type Feedback = { id: number; label: "Perfect!" | "Great!" | "Try again"; combo: number; ok: boolean };
+type Phase = "study" | "type";
 
 export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onComplete }: PracticeScreenProps) {
   const sentences = useMemo(() => sentencesForCategory(categoryId), [categoryId]);
   const targetMeta = LANGUAGES[targetLang];
   const nativeMeta = LANGUAGES[nativeLang];
 
+  const [phase, setPhase] = useState<Phase>("study");
   const [sentenceIndex, setSentenceIndex] = useState(0);
   const [tokenIndex, setTokenIndex] = useState(0);
   const [input, setInput] = useState("");
@@ -70,6 +72,10 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
     }, 550);
   }
 
+  function startTyping() {
+    setPhase("type");
+  }
+
   // Accepts the just-updated tallies explicitly, since the state setters above
   // haven't flushed yet when the final token completes the lesson in the same tick.
   function advanceToken(tallies: { correctFirstTry: number; mistakes: number; maxCombo: number; score: number }) {
@@ -85,6 +91,7 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
       setSentenceIndex(sentenceIndex + 1);
       setTokenIndex(0);
       setInput("");
+      setPhase("study");
       return;
     }
     // lesson complete
@@ -141,81 +148,127 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
         </div>
       </header>
 
-      <main className="flex-1 px-6 py-10 flex items-center justify-center">
-        <div className="w-full max-w-2xl flex flex-col gap-8 relative">
-          {feedback && (
-            <div
-              className={cn(
-                "absolute -top-4 left-1/2 -translate-x-1/2 font-serif text-2xl font-bold animate-float-up pointer-events-none",
-                feedback.ok ? "text-success" : "text-destructive",
-              )}
-            >
-              {feedback.label}
-            </div>
-          )}
-
-          <Card className="p-6">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground font-sans mb-2">
-              {nativeMeta.flag} {nativeMeta.name}
+      {phase === "study" ? (
+        <main className="flex-1 px-6 py-10 flex items-center justify-center">
+          <div className="w-full max-w-2xl flex flex-col gap-8">
+            <p className="text-center text-muted-foreground font-sans text-xs uppercase tracking-wide">
+              New sentence · study it first
             </p>
-            <p dir={nativeMeta.dir} className="font-serif text-2xl leading-snug">
-              {nativePrompt}
-            </p>
-          </Card>
 
-          <div className="text-center">
-            <p dir={targetMeta.dir} className="font-serif text-xl min-h-[2.5rem] flex flex-wrap gap-2 justify-center items-center">
-              {revealed && <span className="text-foreground">{revealed}</span>}
-              <span className="inline-block px-3 py-1 rounded-lg bg-primary/10 border-2 border-dashed border-primary text-primary font-sans text-base">
-                {input || "…"}
-              </span>
-              {remainingCount > 0 && (
-                <span className="text-muted-foreground">{Array.from({ length: remainingCount }, () => "•••").join(" ")}</span>
-              )}
-            </p>
-          </div>
-
-          <div className="flex flex-col items-center gap-3">
-            <input
-              autoFocus
-              dir={targetMeta.dir}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
-              placeholder={`Type in ${targetMeta.name}…`}
-              className={cn(
-                "w-full max-w-md px-4 py-3 rounded-xl border-2 bg-card text-center font-sans text-lg outline-none transition-colors",
-                missedThisToken ? "border-destructive" : "border-border focus:border-primary",
-              )}
-            />
-            <div className="flex items-center gap-3">
-              <Button size="sm" onClick={handleSubmit}>
-                Check
-              </Button>
-              {targetMeta.hasRomanization && targetTranslation.romanization && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowHint((v) => !v)}
-                  className="flex items-center gap-1"
-                >
-                  <Eye className="w-4 h-4" /> Hint
-                </Button>
-              )}
-            </div>
-            {showHint && targetTranslation.romanization && (
-              <p className="text-muted-foreground font-sans text-sm italic">
-                {targetTranslation.romanization[tokenIndex]}
+            <Card className="p-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-sans mb-2">
+                {nativeMeta.flag} {nativeMeta.name}
               </p>
-            )}
+              <p dir={nativeMeta.dir} className="font-serif text-2xl leading-snug">
+                {nativePrompt}
+              </p>
+            </Card>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-sans mb-3 text-center">
+                {targetMeta.flag} {targetMeta.name} — word by word
+              </p>
+              <div dir={targetMeta.dir} className="flex flex-wrap justify-center gap-3">
+                {targetTranslation.tokens.map((tok, i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-muted border border-border min-w-[4.5rem]"
+                  >
+                    <span className="font-serif text-lg">{tok}</span>
+                    {targetTranslation.romanization && (
+                      <span className="text-xs text-muted-foreground font-sans italic">
+                        {targetTranslation.romanization[i]}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <Button size="lg" onClick={startTyping} className="flex items-center gap-2" autoFocus>
+                Practice it <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      ) : (
+        <main className="flex-1 px-6 py-10 flex items-center justify-center">
+          <div className="w-full max-w-2xl flex flex-col gap-8 relative">
+            {feedback && (
+              <div
+                className={cn(
+                  "absolute -top-4 left-1/2 -translate-x-1/2 font-serif text-2xl font-bold animate-float-up pointer-events-none",
+                  feedback.ok ? "text-success" : "text-destructive",
+                )}
+              >
+                {feedback.label}
+              </div>
+            )}
+
+            <Card className="p-6">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground font-sans mb-2">
+                {nativeMeta.flag} {nativeMeta.name}
+              </p>
+              <p dir={nativeMeta.dir} className="font-serif text-2xl leading-snug">
+                {nativePrompt}
+              </p>
+            </Card>
+
+            <div className="text-center">
+              <p dir={targetMeta.dir} className="font-serif text-xl min-h-[2.5rem] flex flex-wrap gap-2 justify-center items-center">
+                {revealed && <span className="text-foreground">{revealed}</span>}
+                <span className="inline-block px-3 py-1 rounded-lg bg-primary/10 border-2 border-dashed border-primary text-primary font-sans text-base">
+                  {input || "…"}
+                </span>
+                {remainingCount > 0 && (
+                  <span className="text-muted-foreground">{Array.from({ length: remainingCount }, () => "•••").join(" ")}</span>
+                )}
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center gap-3">
+              <input
+                autoFocus
+                dir={targetMeta.dir}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                placeholder={`Type in ${targetMeta.name}…`}
+                className={cn(
+                  "w-full max-w-md px-4 py-3 rounded-xl border-2 bg-card text-center font-sans text-lg outline-none transition-colors",
+                  missedThisToken ? "border-destructive" : "border-border focus:border-primary",
+                )}
+              />
+              <div className="flex items-center gap-3">
+                <Button size="sm" onClick={handleSubmit}>
+                  Check
+                </Button>
+                {targetMeta.hasRomanization && targetTranslation.romanization && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowHint((v) => !v)}
+                    className="flex items-center gap-1"
+                  >
+                    <Eye className="w-4 h-4" /> Hint
+                  </Button>
+                )}
+              </div>
+              {showHint && targetTranslation.romanization && (
+                <p className="text-muted-foreground font-sans text-sm italic">
+                  {targetTranslation.romanization[tokenIndex]}
+                </p>
+              )}
+            </div>
+          </div>
+        </main>
+      )}
     </div>
   );
 }

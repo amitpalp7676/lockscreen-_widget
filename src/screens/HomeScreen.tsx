@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
-import { ArrowLeftRight, Dumbbell } from "lucide-react";
+import { ArrowLeftRight, BookOpen, Dumbbell } from "lucide-react";
 import { LanguageGrid } from "@/components/LanguageGrid";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { StatsBar } from "@/components/StatsBar";
+import { Button } from "@/components/ui/Button";
+import { BasicsScreen } from "@/screens/BasicsScreen";
 import type { LanguageCode } from "@/data/languages";
 import { CATEGORIES } from "@/data/sentences";
 import { completionKey, type ProgressState } from "@/hooks/useProgress";
@@ -16,6 +18,7 @@ interface HomeScreenProps {
 export function HomeScreen({ progress, onStart }: HomeScreenProps) {
   const [nativeLang, setNativeLang] = useState<LanguageCode>("en");
   const [targetLang, setTargetLang] = useState<LanguageCode | null>(null);
+  const [showBasics, setShowBasics] = useState(false);
 
   const canPick = targetLang !== null && targetLang !== nativeLang;
 
@@ -28,6 +31,16 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
     }
     return map;
   }, [canPick, nativeLang, targetLang, progress.completions]);
+
+  if (showBasics && targetLang) {
+    return (
+      <BasicsScreen
+        targetLang={targetLang}
+        onContinue={() => setShowBasics(false)}
+        onExit={() => setShowBasics(false)}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col">
@@ -62,6 +75,14 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
             <h2 className="font-serif text-lg font-semibold mb-3">I want to learn</h2>
             <LanguageGrid value={targetLang} onChange={setTargetLang} disabledCode={nativeLang} />
           </section>
+
+          {canPick && (
+            <div className="flex justify-center">
+              <Button variant="secondary" onClick={() => setShowBasics(true)} className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4" /> New to this language? Learn the basics first
+              </Button>
+            </div>
+          )}
 
           <section>
             <h2 className="font-serif text-lg font-semibold mb-3">Pick a lesson</h2>
