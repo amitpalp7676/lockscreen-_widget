@@ -1,3 +1,16 @@
+const COMBINING_MARKS = /[̀-ͯ]/g;
+const OPTIONAL_PUNCT = /[¿¡]/g;
+
+/** Strips accents (é→e, ñ→n, …) so typing on a plain keyboard still counts. */
+export function foldDiacritics(s: string): string {
+  return s.normalize("NFD").replace(COMBINING_MARKS, "");
+}
+
+/** Case/accent-insensitive comparison key; leading ¿/¡ are optional since many keyboards lack them. */
+export function normalizeForMatch(s: string): string {
+  return foldDiacritics(s.replace(OPTIONAL_PUNCT, "")).trim().toLowerCase();
+}
+
 export type Rating = "C" | "B" | "A" | "S" | "SS" | "SSS";
 
 export function rateAccuracy(accuracy: number): Rating {

@@ -20,7 +20,7 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
   const [targetLang, setTargetLang] = useState<LanguageCode | null>(null);
   const [showBasics, setShowBasics] = useState(false);
 
-  const canPick = targetLang !== null && targetLang !== nativeLang;
+  const canPick = targetLang !== null;
 
   const bestRatings = useMemo(() => {
     if (!canPick) return {};
@@ -64,7 +64,7 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
 
           <section>
             <h2 className="font-serif text-lg font-semibold mb-3">I speak</h2>
-            <LanguageGrid value={nativeLang} onChange={setNativeLang} disabledCode={targetLang} />
+            <LanguageGrid value={nativeLang} onChange={setNativeLang} />
           </section>
 
           <div className="flex justify-center text-muted-foreground">
@@ -73,7 +73,10 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
 
           <section>
             <h2 className="font-serif text-lg font-semibold mb-3">I want to learn</h2>
-            <LanguageGrid value={targetLang} onChange={setTargetLang} disabledCode={nativeLang} />
+            <LanguageGrid value={targetLang} onChange={setTargetLang} />
+            <p className="text-center text-muted-foreground text-xs font-sans mt-2">
+              Same language on both sides works too — e.g. Spanish → Spanish for pure typing practice.
+            </p>
           </section>
 
           {canPick && (
@@ -93,7 +96,7 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
             />
             {!canPick && (
               <p className="text-center text-muted-foreground text-sm font-sans mt-3">
-                Choose a language to learn that's different from the one you speak.
+                Pick a language you want to learn above to unlock lessons.
               </p>
             )}
           </section>

@@ -4,7 +4,7 @@ import { sentencesForCategory } from "@/data/sentences";
 import { LANGUAGES, type LanguageCode } from "@/data/languages";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { scoreForCombo } from "@/lib/practice";
+import { foldDiacritics, normalizeForMatch, scoreForCombo } from "@/lib/practice";
 import { cn } from "@/lib/utils";
 
 export interface LessonResult {
@@ -27,13 +27,7 @@ interface PracticeScreenProps {
 }
 
 type Feedback = { id: number; label: "Perfect!" | "Great!" | "Try again"; combo: number; ok: boolean };
-
-/** Wrong full-sentence submissions before we reveal the answer so the learner can type it and move on. */
-const REVEAL_AFTER_MISSES = 2;
-
-function sentencesMatch(a: string, b: string): boolean {
-  return a.trim().toLowerCase() === b.trim().toLowerCase();
-}
+const OPTIONAL_LEADING_PUNCT = new Set(["¿", "¡"]);
 
 export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onComplete }: PracticeScreenProps) {
   const sentences = useMemo(() => sentencesForCategory(categoryId), [categoryId]);
@@ -48,7 +42,6 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
   const [mistakes, setMistakes] = useState(0);
   const [correctFirstTry, setCorrectFirstTry] = useState(0);
   const [missedThisSentence, setMissedThisSentence] = useState(false);
-  const [wrongAttempts, setWrongAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const feedbackId = useRef(0);
@@ -61,7 +54,9 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
   const targetTranslation = sentence.translations[targetLang];
   const nativePrompt = sentence.translations[nativeLang].tokens.join(nativeMeta.joiner);
   const expectedText = targetTranslation.tokens.join(targetMeta.joiner);
-  const showAnswer = wrongAttempts >= REVEAL_AFTER_MISSES;
+  // Chars the learner actually has to type — accents are folded and leading ¿/¡ are optional,
+  // so this stays correct whether or not they typed those (a plain keyboard usually can't).
+  const requiredLength = normalizeForMatch(expectedText).length;
 
   function fireFeedback(label: Feedback["label"], comboValue: number, ok: boolean) {
     feedbackId.current += 1;
@@ -75,7 +70,6 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
     setInput("");
     setShowHint(false);
     setMissedThisSentence(false);
-    setWrongAttempts(0);
   }
 
   // Accepts the just-updated tallies explicitly, since the state setters above
@@ -96,7 +90,7 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
   }
 
   function evaluate(value: string) {
-    if (sentencesMatch(value, expectedText)) {
+    if (normalizeForMatch(value) === normalizeForMatch(expectedText)) {
       const nextCombo = combo + 1;
       const gained = scoreForCombo(nextCombo);
       const newMaxCombo = Math.max(maxCombo, nextCombo);
@@ -111,7 +105,6 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
     } else {
       setCombo(0);
       setMissedThisSentence(true);
-      setWrongAttempts((n) => n + 1);
       setMistakes((m) => m + 1);
       fireFeedback("Try again", 0, false);
       setInput("");
@@ -120,13 +113,40 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
 
   function handleChange(value: string) {
     setInput(value);
-    if (value.length >= expectedText.length) {
+    if (normalizeForMatch(value).length >= requiredLength) {
       evaluate(value);
     }
   }
 
   const sentenceProgress =
-    (sentenceIndex + Math.min(input.length / Math.max(expectedText.length, 1), 1)) / sentences.length;
+    (sentenceIndex + Math.min(input.length / Math.max(requiredLength, 1), 1)) / sentences.length;
+
+  // Walk the full target sentence, overlaying what's been typed so far (colored)
+  // on top of the still-untyped remainder (shown as a muted "answer" to copy).
+  const typedChars = Array.from(input);
+  let typedIndex = 0;
+  const displayChars: { key: number; ch: string; state: "correct" | "wrong" | "ghost" | "optional" }[] = [];
+  Array.from(expectedText).forEach((ch, i) => {
+    if (OPTIONAL_LEADING_PUNCT.has(ch)) {
+      const typedIt = typedIndex < typedChars.length && typedChars[typedIndex] === ch;
+      if (typedIt) {
+        displayChars.push({ key: i, ch, state: "correct" });
+        typedIndex++;
+      } else {
+        // Not typed (most keyboards can't produce ¿/¡) — show it dimmed, don't consume input for it.
+        displayChars.push({ key: i, ch, state: "optional" });
+      }
+      return;
+    }
+    if (typedIndex < typedChars.length) {
+      const typedCh = typedChars[typedIndex];
+      const correct = foldDiacritics(typedCh).toLowerCase() === foldDiacritics(ch).toLowerCase();
+      displayChars.push({ key: i, ch: typedCh, state: correct ? "correct" : "wrong" });
+      typedIndex++;
+    } else {
+      displayChars.push({ key: i, ch, state: "ghost" });
+    }
+  });
 
   return (
     <div className="flex-1 flex flex-col">
@@ -169,19 +189,22 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
             </p>
           </Card>
 
-          {/* Typewriter line: characters color as you type, matched live against the target sentence. */}
+          {/* Typewriter line: the answer is always visible (copy it), coloring as you type over it. */}
           <div dir={targetMeta.dir} className="text-center font-serif text-2xl min-h-[2.5rem] tracking-wide">
-            {input.length === 0 && <span className="text-muted-foreground">{targetMeta.name} goes here…</span>}
-            {Array.from(input).map((ch, i) => {
-              const expectedCh = Array.from(expectedText)[i];
-              const correct = expectedCh !== undefined && ch.toLowerCase() === expectedCh.toLowerCase();
-              return (
-                <span key={i} className={correct ? "text-success" : "text-destructive underline"}>
-                  {ch}
-                </span>
-              );
-            })}
-            {input.length > 0 && <span className="inline-block w-0.5 h-6 bg-primary align-middle animate-pulse ml-0.5" />}
+            {displayChars.map(({ key, ch, state }) => (
+              <span
+                key={key}
+                className={cn(
+                  state === "correct" && "text-success",
+                  state === "wrong" && "text-destructive underline",
+                  state === "ghost" && "text-muted-foreground",
+                  state === "optional" && "text-muted-foreground opacity-50",
+                )}
+              >
+                {ch}
+              </span>
+            ))}
+            <span className="inline-block w-0.5 h-6 bg-primary align-middle animate-pulse ml-0.5" />
           </div>
 
           <div className="flex flex-col items-center gap-3">
@@ -217,15 +240,6 @@ export function PracticeScreen({ nativeLang, targetLang, categoryId, onExit, onC
             {showHint && targetTranslation.romanization && (
               <p className="text-muted-foreground font-sans text-sm italic">
                 {targetTranslation.romanization.join(" ")}
-              </p>
-            )}
-            {showAnswer && (
-              <p className="font-sans text-sm text-center">
-                <span className="text-muted-foreground">Answer: </span>
-                <span dir={targetMeta.dir} className="font-semibold text-foreground">
-                  {expectedText}
-                </span>
-                <span className="text-muted-foreground"> — type it in to continue</span>
               </p>
             )}
           </div>
