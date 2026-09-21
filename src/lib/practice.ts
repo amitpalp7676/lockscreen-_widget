@@ -1,16 +1,3 @@
-const LEADING_PUNCT = /^[¿¡"'«»([]+/;
-const TRAILING_PUNCT = /[.,;:!?"'»)\]、。！？，]+$/;
-
-/** Strips surrounding punctuation and normalizes case for forgiving comparison. */
-export function normalizeToken(input: string): string {
-  return input.trim().toLowerCase().replace(LEADING_PUNCT, "").replace(TRAILING_PUNCT, "");
-}
-
-export function tokensMatch(input: string, expected: string): boolean {
-  const a = normalizeToken(input);
-  return a.length > 0 && a === normalizeToken(expected);
-}
-
 export type Rating = "C" | "B" | "A" | "S" | "SS" | "SSS";
 
 export function rateAccuracy(accuracy: number): Rating {
