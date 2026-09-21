@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { betterRating, type Rating } from "@/lib/practice";
 
 export interface ProgressState {
   xp: number;
@@ -6,6 +7,8 @@ export interface ProgressState {
   lastPracticeDate: string | null;
   bestCombo: number;
   lessonsCompleted: number;
+  /** Best rating earned per "nativeLang:targetLang:categoryId" key. */
+  completions: Record<string, Rating>;
 }
 
 const STORAGE_KEY = "julingo:progress";
@@ -16,7 +19,12 @@ const DEFAULT_PROGRESS: ProgressState = {
   lastPracticeDate: null,
   bestCombo: 0,
   lessonsCompleted: 0,
+  completions: {},
 };
+
+export function completionKey(nativeLang: string, targetLang: string, categoryId: string): string {
+  return `${nativeLang}:${targetLang}:${categoryId}`;
+}
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -52,7 +60,7 @@ export function useProgress() {
   }, []);
 
   const recordLesson = useCallback(
-    (xpEarned: number, comboReached: number) => {
+    (xpEarned: number, comboReached: number, categoryKey: string, rating: Rating) => {
       const today = todayKey();
       let streak = progress.streak;
       if (progress.lastPracticeDate === today) {
@@ -68,6 +76,10 @@ export function useProgress() {
         lastPracticeDate: today,
         bestCombo: Math.max(progress.bestCombo, comboReached),
         lessonsCompleted: progress.lessonsCompleted + 1,
+        completions: {
+          ...progress.completions,
+          [categoryKey]: betterRating(progress.completions[categoryKey], rating),
+        },
       });
     },
     [progress, persist],

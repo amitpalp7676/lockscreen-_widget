@@ -22,6 +22,14 @@ export function rateAccuracy(accuracy: number): Rating {
   return "C";
 }
 
+const RATING_ORDER: Rating[] = ["C", "B", "A", "S", "SS", "SSS"];
+
+/** Returns whichever rating ranks higher (SSS > SS > ... > C). */
+export function betterRating(a: Rating | undefined, b: Rating): Rating {
+  if (!a) return b;
+  return RATING_ORDER.indexOf(b) > RATING_ORDER.indexOf(a) ? b : a;
+}
+
 export const RATING_COLOR: Record<Rating, string> = {
   SSS: "text-warning",
   SS: "text-primary",

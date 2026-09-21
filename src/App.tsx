@@ -2,7 +2,8 @@ import { useState } from "react";
 import { HomeScreen } from "@/screens/HomeScreen";
 import { PracticeScreen, type LessonResult } from "@/screens/PracticeScreen";
 import { ResultsScreen } from "@/screens/ResultsScreen";
-import { useProgress } from "@/hooks/useProgress";
+import { useProgress, completionKey } from "@/hooks/useProgress";
+import { rateAccuracy } from "@/lib/practice";
 import type { LanguageCode } from "@/data/languages";
 
 type Screen =
@@ -32,7 +33,10 @@ function App() {
           categoryId={screen.categoryId}
           onExit={() => setScreen({ name: "home" })}
           onComplete={(result) => {
-            recordLesson(result.score, result.maxCombo);
+            const accuracy = result.totalTokens > 0 ? result.correctFirstTry / result.totalTokens : 0;
+            const rating = rateAccuracy(accuracy);
+            const key = completionKey(result.nativeLang, result.targetLang, result.categoryId);
+            recordLesson(result.score, result.maxCombo, key, rating);
             setScreen({ name: "results", result });
           }}
         />

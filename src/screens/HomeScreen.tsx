@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeftRight, Dumbbell } from "lucide-react";
 import { LanguageGrid } from "@/components/LanguageGrid";
 import { CategoryGrid } from "@/components/CategoryGrid";
 import { StatsBar } from "@/components/StatsBar";
 import type { LanguageCode } from "@/data/languages";
-import type { ProgressState } from "@/hooks/useProgress";
+import { CATEGORIES } from "@/data/sentences";
+import { completionKey, type ProgressState } from "@/hooks/useProgress";
+import type { Rating } from "@/lib/practice";
 
 interface HomeScreenProps {
   progress: ProgressState;
@@ -16,6 +18,16 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
   const [targetLang, setTargetLang] = useState<LanguageCode | null>(null);
 
   const canPick = targetLang !== null && targetLang !== nativeLang;
+
+  const bestRatings = useMemo(() => {
+    if (!canPick) return {};
+    const map: Partial<Record<string, Rating>> = {};
+    for (const cat of CATEGORIES) {
+      const rating = progress.completions[completionKey(nativeLang, targetLang, cat.id)];
+      if (rating) map[cat.id] = rating;
+    }
+    return map;
+  }, [canPick, nativeLang, targetLang, progress.completions]);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -53,7 +65,11 @@ export function HomeScreen({ progress, onStart }: HomeScreenProps) {
 
           <section>
             <h2 className="font-serif text-lg font-semibold mb-3">Pick a lesson</h2>
-            <CategoryGrid disabled={!canPick} onSelect={(categoryId) => canPick && onStart(nativeLang, targetLang, categoryId)} />
+            <CategoryGrid
+              disabled={!canPick}
+              bestRatings={bestRatings}
+              onSelect={(categoryId) => canPick && onStart(nativeLang, targetLang, categoryId)}
+            />
             {!canPick && (
               <p className="text-center text-muted-foreground text-sm font-sans mt-3">
                 Choose a language to learn that's different from the one you speak.
